@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Swasth Clinic — Appointment Manager</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --charcoal:#40464D;
+    --body-c:#5A626B;
+    --caption:#78828D;
+    --label-c:#8A95A0;
+    --light:#FBFBFA;
+    --sage:#A9B5AC;
+    --cream:#F6F2EB;
+    --stone:#C8C3BC;
+    --gold:#C8A977;
+
+    --ink:var(--charcoal);
+    --paper:var(--cream);
+    --card:#ffffff;
+    --line:var(--stone);
+    --moss:var(--charcoal);
+    --moss-dark:#2c3136;
+    --clay:#B0654F;
+    --muted:var(--caption);
+    --high:#B0654F;
+    --medium:var(--gold);
+    --low:#6E8A78;
+
+    --role-patient:#6E8A78;
+    --role-doctor:#40464D;
+    --role-admin:#A6863F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--charcoal);
+    font-family:'Inter',sans-serif;
+    font-weight:300;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3,.display{
+    font-family:'Inter',sans-serif;
+    font-weight:300;
+    letter-spacing:-0.01em;
+  }
+  .mono{ font-family:'IBM Plex Mono',monospace; letter-spacing:0.02em; }
+  a{ color:inherit; }
+
+  .noise-bg{ position:relative; }
+  .noise-bg::before{
+    content:'';
+    position:absolute; inset:0; z-index:0; pointer-events:none;
+    opacity:0.045;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .gold-bar{ width:40px; height:2px; background:var(--gold); margin-bottom:14px; }
+
+  .shell{ max-width:1080px; margin:0 auto; padding:0 24px; }
+
+  .topbar{
+    border-bottom:1px solid var(--line);
+    background:var(--paper);
+    position:sticky; top:0; z-index:10;
+  }
+  .topbar-inner{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:18px 0;
+  }
+  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    width:34px;height:34px;border-radius:50%;
+    background:transparent; color:var(--charcoal); display:flex;align-items:center;justify-content:center;
+    border:1.5px solid var(--gold); font-weight:500; font-size:15px;
+  }
+  .brand-name{ font-size:18px; font-weight:400; letter-spacing:0.01em; }
+  .brand-sub{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:0.12em; margin-top:-1px; font-weight:400;}
+
+  .role-pill{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    padding:5px 10px; border-radius:20px; border:1px solid var(--line);
+    background:#fff; color:var(--muted);
+  }
+  .topbar-actions{ display:flex; align-items:center; gap:12px; }
+
+  .btn{
+    font-family:'Inter',sans-serif; font-weight:500; font-size:14px;
+    padding:11px 20px; border-radius:3px; border:1px solid var(--charcoal);
+    background:var(--charcoal); color:var(--light); cursor:pointer; transition:all .2s ease;
+  }
+  .btn:hover{ background:#2c3136; }
+  .btn:disabled{ opacity:0.5; cursor:not-allowed; }
+  .btn-ghost{
+    background:transparent; color:var(--charcoal); border:1px solid var(--stone);
+    font-weight:400;
+  }
+  .btn-ghost:hover{ border-color:var(--gold); background:#fff; }
+  .btn-danger{ background:transparent; color:var(--high); border:1px solid var(--high); font-weight:400; }
+  .btn-danger:hover{ background:var(--high); color:#fff; }
+  .btn-sm{ padding:7px 12px; font-size:13px; }
+  .btn-block{ width:100%; }
+
+  input,select,textarea{
+    font-family:'Inter',sans-serif; font-size:14px;
+    padding:11px 13px; border-radius:8px; border:1px solid var(--line);
+    background:#fff; color:var(--ink); width:100%;
+  }
+  input:focus,select:focus,textarea:focus{ outline:2px solid var(--moss); outline-offset:1px; border-color:var(--moss); }
+  label{ font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:6px; }
+  .field{ margin-bottom:16px; }
+
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:2px;
+    padding:26px;
+  }
+
+  .auth-wrap{
+    min-height:calc(100vh - 74px); display:flex; align-items:center; justify-content:center;
+    padding:40px 24px; z-index:1;
+  }
+  .auth-card{ width:100%; max-width:420px; position:relative; z-index:1; }
+  .auth-hero{ text-align:center; margin-bottom:28px; }
+  .auth-hero h1{ font-size:32px; font-weight:300; margin:0 0 8px 0; letter-spacing:-0.01em; }
+  .auth-hero p{ color:var(--body-c); font-size:14px; margin:0; font-weight:300; }
+
+  .tabs{ display:flex; gap:4px; margin-bottom:22px; border-bottom:1px solid var(--line); }
+  .tab{
+    padding:10px 16px; font-size:12.5px; font-weight:500; color:var(--muted);
+    cursor:pointer; border-bottom:2px solid transparent; text-transform:uppercase; letter-spacing:0.08em;
+  }
+  .tab.active{ color:var(--charcoal); border-bottom-color:var(--gold); }
+
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+  .grid-3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+  @media (max-width:720px){ .grid-2,.grid-3{ grid-template-columns:1fr; } }
+
+  .section-head{ display:flex; flex-direction:column; align-items:flex-start; justify-content:space-between; margin-bottom:18px; }
+  .section-head h2{ font-size:21px; margin:2px 0 0 0; font-weight:300; }
+  .section-head .head-row{ display:flex; width:100%; align-items:center; justify-content:space-between; }
+  .eyebrow{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.12em; color:var(--muted); margin-bottom:4px; font-weight:500; }
+
+  .doctor-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:17px 0; border-bottom:1px solid var(--line);
+  }
+  .doctor-row:last-child{ border-bottom:none; }
+  .doctor-name{ font-size:16px; font-weight:500; }
+  .doctor-spec{ font-size:13px; color:var(--muted); margin-top:2px; font-weight:300; }
+
+  .slot-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:8px; margin-top:14px; }
+  .slot-btn{
+    padding:9px 4px; text-align:center; border-radius:7px; border:1px solid var(--line);
+    background:#fff; font-family:'IBM Plex Mono',monospace; font-size:12.5px; cursor:pointer;
+  }
+  .slot-btn:hover{ border-color:var(--moss); color:var(--moss); }
+  .slot-btn.selected{ background:var(--moss); border-color:var(--moss); color:#fff; }
+
+  .appt-card{
+    border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:14px; background:#fff;
+  }
+  .appt-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .appt-when{ font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--muted); }
+  .appt-with{ font-size:16px; font-weight:600; margin-top:2px; }
+  .badge{
+    font-size:10px; text-transform:uppercase; letter-spacing:0.08em; font-weight:500;
+    padding:5px 10px; border-radius:2px; white-space:nowrap; border:1px solid transparent;
+  }
+  .badge-high{ background:transparent; color:var(--high); border-color:var(--high); }
+  .badge-medium{ background:transparent; color:#A6863F; border-color:var(--gold); }
+  .badge-low{ background:transparent; color:var(--low); border-color:var(--sage); }
+  .badge-status{ background:transparent; color:var(--muted); border-color:var(--stone); }
+  .badge-booked{ background:transparent; color:var(--charcoal); border-color:var(--charcoal); }
+  .badge-cancelled{ background:transparent; color:var(--high); border-color:var(--high); }
+  .badge-completed{ background:transparent; color:var(--low); border-color:var(--sage); }
+
+  .appt-detail{ margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); font-size:14px; line-height:1.55; }
+  .appt-detail-label{ font-size:11px; text-transform:uppercase; letter-spacing:0.06em; color:var(--muted); font-weight:700; margin-top:10px; }
+  .appt-detail-label:first-child{ margin-top:0; }
+  .questions-list{ margin:6px 0 0 0; padding-left:18px; font-size:13.5px; }
+  .questions-list li{ margin-bottom:3px; }
+
+  .empty{
+    text-align:center; padding:48px 20px; color:var(--muted);
+  }
+  .empty .display{ font-size:19px; color:var(--ink); margin-bottom:6px; }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--moss-dark); color:#fff; padding:13px 22px; border-radius:9px;
+    font-size:14px; font-weight:500; box-shadow:0 8px 24px rgba(0,0,0,0.18); z-index:100;
+  }
+  .toast.error{ background:var(--clay); }
+
+  .banner-error{
+    background:rgba(181,86,61,0.09); border:1px solid rgba(181,86,61,0.3); color:var(--high);
+    padding:11px 14px; border-radius:8px; font-size:13.5px; margin-bottom:16px;
+  }
+
+  .hours-row{ display:grid; grid-template-columns:110px 1fr 1fr auto; gap:10px; align-items:center; margin-bottom:10px; }
+  .hours-day{ font-size:13px; font-weight:600; }
+
+  .divider-label{
+    text-align:center; font-size:11px; text-transform:uppercase; letter-spacing:0.1em;
+    color:var(--muted); margin:26px 0 18px; position:relative;
+  }
+  .divider-label::before,.divider-label::after{
+    content:''; position:absolute; top:50%; width:36%; height:1px; background:var(--line);
+  }
+  .divider-label::before{ left:0; } .divider-label::after{ right:0; }
+
+  .page-pad{ padding:32px 0 60px; }
+
+  /* Landing / role picker */
+  .landing{
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:56px 24px 40px; position:relative;
+  }
+  .landing-inner{ max-width:920px; width:100%; position:relative; z-index:1; text-align:center; }
+  .landing-mark{
+    width:56px;height:56px;border-radius:50%; border:1.5px solid var(--gold);
+    display:flex;align-items:center;justify-content:center; margin:0 auto 26px;
+    font-size:24px; font-weight:400;
+  }
+  .landing h1{ font-size:76px; font-weight:300; margin:0 0 18px 0; line-height:1.02; }
+  .landing .tagline{ color:var(--body-c); font-size:17px; font-weight:300; margin:0 0 64px; }
+
+  .role-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:16px; max-width:720px; margin:0 auto; }
+  @media (max-width:680px){ .role-grid{ grid-template-columns:1fr; } }
+  .role-card{
+    background:#fff; border:1px solid var(--line); border-radius:2px; padding:28px 20px;
+    cursor:pointer; transition:all .18s ease; text-align:left;
+  }
+  .role-card:hover{ border-color:var(--gold); transform:translateY(-2px); }
+  .role-card-icon{
+    width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    font-size:15px; font-weight:500; margin-bottom:16px; color:#fff;
+  }
+  .role-card-title{ font-size:16px; font-weight:500; margin-bottom:4px; }
+  .role-card-desc{ font-size:12.5px; color:var(--muted); font-weight:300; line-height:1.5; }
+
+  .back-link{
+    font-size:12.5px; color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; gap:6px;
+    margin-bottom:22px; font-weight:400; text-transform:uppercase; letter-spacing:0.06em;
+  }
+  .back-link:hover{ color:var(--charcoal); }
+
+  .role-tag{
+    display:inline-flex; align-items:center; gap:6px; font-size:10.5px; text-transform:uppercase;
+    letter-spacing:0.08em; font-weight:600; padding:5px 11px; border-radius:2px; color:#fff;
+  }
+  .role-dot{ width:6px; height:6px; border-radius:50%; background:#fff; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+const API_BASE = "http://localhost:4000/api/v1";
+
+// ---------- API helper ----------
+function useApi(token) {
+  return useCallback(async (path, options = {}) => {
+    const res = await fetch(API_BASE + path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers || {}),
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.message || "Something went wrong");
+    return data;
+  }, [token]);
+}
+
+function Toast({ message, kind, onDone }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 3200);
+    return () => clearTimeout(t);
+  }, [message]);
+  if (!message) return null;
+  return <div className={"toast" + (kind === "error" ? " error" : "")}>{message}</div>;
+}
+
+// ---------- Landing / role picker ----------
+const ROLE_META = {
+  PATIENT: { label: "Patient", color: "var(--role-patient)", desc: "Book visits, share symptoms, and track your care.", icon: "P" },
+  DOCTOR: { label: "Doctor", color: "var(--role-doctor)", desc: "View your day, close out visits, and send patients home informed.", icon: "D" },
+  ADMIN: { label: "Admin", color: "var(--role-admin)", desc: "Onboard doctors, set schedules, and manage leave.", icon: "A" },
+};
+
+function LandingScreen({ onPickRole }) {
+  return (
+    <div className="landing noise-bg">
+      <div className="landing-inner">
+        <div className="landing-mark">S</div>
+        <h1>Swasth Clinic</h1>
+        <p className="tagline">Appointments, symptom triage, and follow-up — in one place.</p>
+
+        <div className="role-grid">
+          {Object.entries(ROLE_META).map(([key, meta]) => (
+            <div className="role-card" key={key} onClick={() => onPickRole(key)}>
+              <div className="role-card-icon" style={{ background: meta.color }}>{meta.icon}</div>
+              <div className="role-card-title">Continue as {meta.label}</div>
+              <div className="role-card-desc">{meta.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Auth screen (scoped to a chosen role) ----------
+function AuthScreen({ onLogin }) {
+  const [role, setRole] = useState(null);
+  const [mode, setMode] = useState("login");
+  const [form, setForm] = useState({ email: "", password: "", name: "" });
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+  const api = useApi(null);
+
+  if (!role) return <LandingScreen onPickRole={(r) => { setRole(r); setMode("login"); }} />;
+
+  const meta = ROLE_META[role];
+
+  async function submit(e) {
+    e.preventDefault();
+    setErr(""); setLoading(true);
+    try {
+      const path = mode === "login" ? "/auth/login" : "/auth/register";
+      const body = mode === "login"
+        ? { email: form.email, password: form.password }
+        : { email: form.email, password: form.password, name: form.name, role };
+      const data = await api(path, { method: "POST", body });
+      const payload = JSON.parse(atob(data.accessToken.split(".")[1]));
+      if (payload.role !== role) {
+        setErr(`This account isn't registered as a ${meta.label.toLowerCase()}. Go back and pick the right role.`);
+        setLoading(false);
+        return;
+      }
+      onLogin({ ...data, role: payload.role, userId: payload.userId, email: form.email, name: form.name });
+    } catch (e2) {
+      setErr(e2.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="auth-wrap noise-bg">
+      <div className="auth-card">
+        <div className="back-link" onClick={() => setRole(null)}>&larr; Choose a different role</div>
+        <div className="auth-hero">
+          <span className="role-tag" style={{ background: meta.color }}>
+            <span className="role-dot"></span>{meta.label} sign in
+          </span>
+          <h1 style={{ marginTop: 14 }}>Swasth Clinic</h1>
+          <p>{role === "DOCTOR" ? "Doctor accounts are created by your clinic admin." : meta.desc}</p>
+        </div>
+        <div className="card">
+          {role !== "DOCTOR" && (
+            <div className="tabs">
+              <div className={"tab" + (mode === "login" ? " active" : "")} onClick={() => setMode("login")}>Sign in</div>
+              <div className={"tab" + (mode === "register" ? " active" : "")} onClick={() => setMode("register")}>Register</div>
+            </div>
+          )}
+          {err && <div className="banner-error">{err}</div>}
+          <form onSubmit={submit}>
+            {mode === "register" && role !== "DOCTOR" && (
+              <div className="field">
+                <label>Full name</label>
+                <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Jordan Blake" />
+              </div>
+            )}
+            <div className="field">
+              <label>Email</label>
+              <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="you@example.com" />
+            </div>
+            <div className="field">
+              <label>Password</label>
+              <input required type="password" minLength={mode === "register" ? 8 : undefined} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} placeholder="••••••••" />
+            </div>
+            <button className="btn btn-block" disabled={loading}>
+              {loading ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}
+            </button>
+          </form>
+          {role === "DOCTOR" && (
+            <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 14, textAlign: "center" }}>
+              No account yet? Ask your clinic admin to create one for you.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Urgency / status badges ----------
+function UrgencyBadge({ level }) {
+  if (!level) return null;
+  const cls = level === "HIGH" ? "badge-high" : level === "MEDIUM" ? "badge-medium" : "badge-low";
+  return <span className={"badge " + cls}>{level} urgency</span>;
+}
+function StatusBadge({ status }) {
+  const map = { BOOKED: "badge-booked", CANCELLED: "badge-cancelled", COMPLETED: "badge-completed" };
+  return <span className={"badge " + (map[status] || "badge-status")}>{status}</span>;
+}
+
+// ---------- Patient portal ----------
+function PatientPortal({ token, showToast }) {
+  const api = useApi(token);
+  const [tab, setTab] = useState("book");
+  const [doctors, setDoctors] = useState([]);
+  const [specialization, setSpecialization] = useState("");
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
+  const [date, setDate] = useState(() => {
+    const d = new Date(); d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [slots, setSlots] = useState([]);
+  const [selectedSlot, setSelectedSlot] = useState(null);
+  const [symptoms, setSymptoms] = useState("");
+  const [appointments, setAppointments] = useState([]);
+  const [booking, setBooking] = useState(false);
+
+  const loadDoctors = useCallback(async () => {
+    try {
+      const q = specialization ? `?specialization=${encodeURIComponent(specialization)}` : "";
+      const data = await api(`/doctors${q}`);
+      setDoctors(data);
+    } catch (e) { showToast(e.message, "error"); }
+  }, [api, specialization]);
+
+  const loadAppointments = useCallback(async () => {
+    try {
+      const data = await api("/appointments/me");
+      setAppointments(data);
+    } catch (e) { showToast(e.message, "error"); }
+  }, [api]);
+
+  useEffect(() => { loadDoctors(); }, [loadDoctors]);
+  useEffect(() => { if (tab === "appointments") loadAppointments(); }, [tab, loadAppointments]);
+
+  async function loadSlots(doctor) {
+    setSelectedDoctor(doctor); setSelectedSlot(null);
+    try {
+      const data = await api(`/doctors/${doctor.id}/slots?date=${date}`);
+      setSlots(data.availableSlots || []);
+    } catch (e) { showToast(e.message, "error"); }
+  }
+
+  useEffect(() => { if (selectedDoctor) loadSlots(selectedDoctor); }, [date]);
+
+  async function confirmBooking() {
+    if (!selectedDoctor || !selectedSlot) return;
+    setBooking(true);
+    try {
+      await api("/appointments", {
+        method: "POST",
+        body: { doctorId: selectedDoctor.id, scheduledAt: selectedSlot, symptoms },
+      });
+      showToast("Appointment booked. A confirmation email is on its way.");
+      setSelectedDoctor(null); setSelectedSlot(null); setSymptoms(""); setSlots([]);
+      setTab("appointments");
+    } catch (e) {
+      showToast(e.message, "error");
+    } finally {
+      setBooking(false);
+    }
+  }
+
+  async function cancelAppointment(id) {
+    try {
+      await api(`/appointments/${id}/cancel`, { method: "PATCH" });
+      showToast("Appointment cancelled.");
+      loadAppointments();
+    } catch (e) { showToast(e.message, "error"); }
+  }
+
+  function fmt(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" }) +
+      " · " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  }
+
+  return (
+    <div className="shell page-pad">
+      <div className="tabs">
+        <div className={"tab" + (tab === "book" ? " active" : "")} onClick={() => setTab("book")}>Book a visit</div>
+        <div className={"tab" + (tab === "appointments" ? " active" : "")} onClick={() => setTab("appointments")}>My appointments</div>
+      </div>
+
+      {tab === "book" && (
+        <div className="grid-2">
+          <div>
+            <div className="section-head"><div className="gold-bar"></div><h2>Find a doctor</h2></div>
+            <div className="field">
+              <input placeholder="Filter by specialization, e.g. Cardiology" value={specialization}
+                onChange={e => setSpecialization(e.target.value)} onKeyUp={e => e.key === "Enter" && loadDoctors()} />
+            </div>
+            <div className="card" style={{ padding: "6px 24px" }}>
+              {doctors.length === 0 && <div className="empty"><div className="display">No doctors found</div>Try clearing the specialization filter.</div>}
+              {doctors.map(d => (
+                <div className="doctor-row" key={d.id}>
+                  <div>
+                    <div className="doctor-name">{d.name}</div>
+                    <div className="doctor-spec">{d.doctorProfile?.specialization}</div>
+                  </div>
+                  <button className="btn btn-sm btn-ghost" onClick={() => loadSlots(d)}>View slots</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="section-head"><div className="gold-bar"></div><h2>Schedule</h2></div>
+            {!selectedDoctor && <div className="card"><div className="empty"><div className="display">Pick a doctor</div>Select someone from the list to see open slots.</div></div>}
+            {selectedDoctor && (
+              <div className="card">
+                <div className="eyebrow">Booking with</div>
+                <div className="doctor-name">{selectedDoctor.name}</div>
+                <div className="doctor-spec" style={{ marginBottom: 14 }}>{selectedDoctor.doctorProfile?.specialization}</div>
+                <div className="field">
+                  <label>Date</label>
+                  <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+                </div>
+                {slots.length === 0 && <div style={{ fontSize: 13.5, color: "var(--muted)" }}>No open slots this day — try another date.</div>}
+                <div className="slot-grid">
+                  {slots.map(s => (
+                    <div key={s} className={"slot-btn" + (selectedSlot === s ? " selected" : "")} onClick={() => setSelectedSlot(s)}>
+                      {new Date(s).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                  ))}
+                </div>
+                {selectedSlot && (
+                  <React.Fragment>
+                    <div className="divider-label">Before you confirm</div>
+                    <div className="field">
+                      <label>Describe your symptoms</label>
+                      <textarea rows="4" value={symptoms} onChange={e => setSymptoms(e.target.value)}
+                        placeholder="e.g. Persistent headache for 3 days, mild fever, sensitivity to light" />
+                    </div>
+                    <button className="btn btn-block" disabled={booking} onClick={confirmBooking}>
+                      {booking ? "Booking…" : "Confirm appointment"}
+                    </button>
+                  </React.Fragment>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {tab === "appointments" && (
+        <div>
+          <div className="section-head"><div className="gold-bar"></div><h2>My appointments</h2></div>
+          {appointments.length === 0 && <div className="card"><div className="empty"><div className="display">Nothing booked yet</div>Head to "Book a visit" to schedule your first appointment.</div></div>}
+          {appointments.map(a => (
+            <div className="appt-card" key={a.id}>
+              <div className="appt-top">
+                <div>
+                  <div className="appt-when">{fmt(a.scheduledAt)}</div>
+                  <div className="appt-with">Dr. {a.doctorProfile?.user?.name} · {a.doctorProfile?.specialization}</div>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <UrgencyBadge level={a.urgencyLevel} />
+                  <StatusBadge status={a.status} />
+                </div>
+              </div>
+              {a.chiefComplaint && (
+                <div className="appt-detail">
+                  <div className="appt-detail-label">Chief complaint</div>
+                  {a.chiefComplaint}
+                  {a.suggestedQuestions && a.suggestedQuestions.length > 0 && (
+                    <React.Fragment>
+                      <div className="appt-detail-label">Your doctor may ask</div>
+                      <ul className="questions-list">{a.suggestedQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul>
+                    </React.Fragment>
+                  )}
+                </div>
+              )}
+              {a.postVisitSummary && (
+                <div className="appt-detail">
+                  <div className="appt-detail-label">Visit summary</div>
+                  <div style={{ whiteSpace: "pre-wrap" }}>{a.postVisitSummary}</div>
+                </div>
+              )}
+              {a.status === "BOOKED" && (
+                <div style={{ marginTop: 14 }}>
+                  <button className="btn btn-sm btn-danger" onClick={() => cancelAppointment(a.id)}>Cancel appointment</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Doctor portal ----------
+function DoctorPortal({ token, showToast }) {
+  const api = useApi(token);
+  const [appointments, setAppointments] = useState([]);
+  const [openId, setOpenId] = useState(null);
+  const [notes, setNotes] = useState({});
+  const [rx, setRx] = useState({});
+  const [saving, setSaving] = useState(null);
+
+  const load = useCallback(async () => {
+    try {
+      const data = await api("/doctors/me/appointments/today");
+      setAppointments(data);
+    } catch (e) { showToast(e.message, "error"); }
+  }, [api]);
+
+  useEffect(() => { load(); }, [load]);
+
+  async function submit(id) {
+    if (!notes[id]) { showToast("Add clinical notes first.", "error"); return; }
+    setSaving(id);
+    try {
+      await api(`/doctors/appointments/${id}/notes`, {
+        method: "PATCH",
+        body: { doctorNotes: notes[id], prescription: rx[id] || undefined },
+      });
+      showToast("Visit closed. Patient summary generated.");
+      load(); setOpenId(null);
+    } catch (e) {
+      showToast(e.message, "error");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  function fmt(iso) {
+    return new Date(iso).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  }
+
+  return (
+    <div className="shell page-pad">
+      <div className="section-head">
+        <div className="gold-bar"></div>
+        <div className="head-row">
+          <h2>Today's appointments</h2>
+          <button className="btn btn-sm btn-ghost" onClick={load}>Refresh</button>
+        </div>
+      </div>
+      {appointments.length === 0 && <div className="card"><div className="empty"><div className="display">Clear schedule today</div>New bookings will appear here automatically.</div></div>}
+      {appointments.map(a => (
+        <div className="appt-card" key={a.id}>
+          <div className="appt-top">
+            <div>
+              <div className="appt-when">{fmt(a.scheduledAt)}</div>
+              <div className="appt-with">{a.patient?.name}</div>
+            </div>
+            <UrgencyBadge level={a.urgencyLevel} />
+          </div>
+          {a.chiefComplaint && (
+            <div className="appt-detail">
+              <div className="appt-detail-label">AI pre-visit summary</div>
+              {a.chiefComplaint}
+              {a.suggestedQuestions?.length > 0 && (
+                <ul className="questions-list">{a.suggestedQuestions.map((q, i) => <li key={i}>{q}</li>)}</ul>
+              )}
+            </div>
+          )}
+          {openId !== a.id ? (
+            <div style={{ marginTop: 14 }}>
+              <button className="btn btn-sm" onClick={() => setOpenId(a.id)}>Close visit</button>
+            </div>
+          ) : (
+            <div style={{ marginTop: 16 }}>
+              <div className="field">
+                <label>Clinical notes</label>
+                <textarea rows="3" value={notes[a.id] || ""} onChange={e => setNotes({ ...notes, [a.id]: e.target.value })}
+                  placeholder="Findings, diagnosis, recommendation…" />
+              </div>
+              <div className="field">
+                <label>Prescription (optional)</label>
+                <input value={rx[a.id] || ""} onChange={e => setRx({ ...rx, [a.id]: e.target.value })}
+                  placeholder="e.g. Amoxicillin 500mg, twice daily for 7 days" />
+              </div>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn btn-sm" disabled={saving === a.id} onClick={() => submit(a.id)}>
+                  {saving === a.id ? "Generating summary…" : "Save & complete visit"}
+                </button>
+                <button className="btn btn-sm btn-ghost" onClick={() => setOpenId(null)}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------- Admin portal ----------
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function AdminPortal({ token, showToast }) {
+  const api = useApi(token);
+  const [tab, setTab] = useState("create");
+  const [doctors, setDoctors] = useState([]);
+  const [form, setForm] = useState({ email: "", password: "", name: "", specialization: "", slotDurationMinutes: 30 });
+  const [creating, setCreating] = useState(false);
+  const [selected, setSelected] = useState(null);
+  const [hours, setHours] = useState([1, 2, 3, 4, 5].map(d => ({ dayOfWeek: d, startTime: "09:00", endTime: "17:00", enabled: true })));
+  const [leaveDate, setLeaveDate] = useState("");
+  const [leaveReason, setLeaveReason] = useState("");
+
+  const loadDoctors = useCallback(async () => {
+    try { setDoctors(await api("/admin/doctors")); } catch (e) { showToast(e.message, "error"); }
+  }, [api]);
+
+  useEffect(() => { loadDoctors(); }, [loadDoctors]);
+
+  async function createDoctor(e) {
+    e.preventDefault();
+    setCreating(true);
+    try {
+      await api("/admin/doctors", { method: "POST", body: form });
+      showToast("Doctor account created.");
+      setForm({ email: "", password: "", name: "", specialization: "", slotDurationMinutes: 30 });
+      loadDoctors();
+    } catch (e2) {
+      showToast(e2.message, "error");
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  function selectDoctor(d) {
+    setSelected(d);
+    const existing = d.doctorProfile?.workingHours || [];
+    setHours([1, 2, 3, 4, 5, 6, 0].map(day => {
+      const found = existing.find(h => h.dayOfWeek === day);
+      return found
+        ? { dayOfWeek: day, startTime: found.startTime, endTime: found.endTime, enabled: true }
+        : { dayOfWeek: day, startTime: "09:00", endTime: "17:00", enabled: false };
+    }));
+  }
+
+  async function saveHours() {
+    const payload = hours.filter(h => h.enabled).map(({ dayOfWeek, startTime, endTime }) => ({ dayOfWeek, startTime, endTime }));
+    try {
+      await api(`/admin/doctors/${selected.id}/working-hours`, { method: "PUT", body: payload });
+      showToast("Working hours updated.");
+      loadDoctors();
+    } catch (e) { showToast(e.message, "error"); }
+  }
+
+  async function markLeave() {
+    if (!leaveDate) { showToast("Pick a date first.", "error"); return; }
+    try {
+      const r = await api(`/admin/doctors/${selected.id}/leaves`, { method: "POST", body: { date: leaveDate, reason: leaveReason } });
+      showToast(`Leave recorded. ${r.affectedCount} appointment(s) cancelled and patients notified.`);
+      setLeaveDate(""); setLeaveReason("");
+    } catch (e) { showToast(e.message, "error"); }
+  }
+
+  return (
+    <div className="shell page-pad">
+      <div className="tabs">
+        <div className={"tab" + (tab === "create" ? " active" : "")} onClick={() => setTab("create")}>Add doctor</div>
+        <div className={"tab" + (tab === "manage" ? " active" : "")} onClick={() => setTab("manage")}>Manage schedules</div>
+      </div>
+
+      {tab === "create" && (
+        <div className="grid-2">
+          <div>
+            <div className="section-head"><div className="gold-bar"></div><h2>New doctor account</h2></div>
+            <div className="card">
+              <form onSubmit={createDoctor}>
+                <div className="field"><label>Full name</label>
+                  <input required value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Dr. Amara Osei" /></div>
+                <div className="field"><label>Email</label>
+                  <input required type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} placeholder="doctor@clinic.com" /></div>
+                <div className="field"><label>Temporary password</label>
+                  <input required type="password" minLength={8} value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} /></div>
+                <div className="field"><label>Specialization</label>
+                  <input required value={form.specialization} onChange={e => setForm({ ...form, specialization: e.target.value })} placeholder="Cardiology" /></div>
+                <div className="field"><label>Slot length (minutes)</label>
+                  <input type="number" min={10} step={5} value={form.slotDurationMinutes} onChange={e => setForm({ ...form, slotDurationMinutes: Number(e.target.value) })} /></div>
+                <button className="btn btn-block" disabled={creating}>{creating ? "Creating…" : "Create doctor"}</button>
+              </form>
+            </div>
+          </div>
+          <div>
+            <div className="section-head"><div className="gold-bar"></div><h2>Roster</h2></div>
+            <div className="card" style={{ padding: "6px 24px" }}>
+              {doctors.length === 0 && <div className="empty"><div className="display">No doctors yet</div>Create one using the form.</div>}
+              {doctors.map(d => (
+                <div className="doctor-row" key={d.id}>
+                  <div>
+                    <div className="doctor-name">{d.name}</div>
+                    <div className="doctor-spec">{d.doctorProfile?.specialization}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === "manage" && (
+        <div className="grid-2">
+          <div>
+            <div className="section-head"><div className="gold-bar"></div><h2>Select doctor</h2></div>
+            <div className="card" style={{ padding: "6px 24px" }}>
+              {doctors.map(d => (
+                <div className="doctor-row" key={d.id}>
+                  <div>
+                    <div className="doctor-name">{d.name}</div>
+                    <div className="doctor-spec">{d.doctorProfile?.specialization}</div>
+                  </div>
+                  <button className="btn btn-sm btn-ghost" onClick={() => selectDoctor(d)}>Manage</button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            {!selected && <div className="card"><div className="empty"><div className="display">No doctor selected</div>Choose one to edit hours or mark leave.</div></div>}
+            {selected && (
+              <React.Fragment>
+                <div className="section-head"><div className="gold-bar"></div><h2>{selected.name}'s week</h2></div>
+                <div className="card" style={{ marginBottom: 18 }}>
+                  {hours.map((h, i) => (
+                    <div className="hours-row" key={h.dayOfWeek}>
+                      <label style={{ margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                        <input type="checkbox" style={{ width: "auto" }} checked={h.enabled}
+                          onChange={e => { const n = [...hours]; n[i].enabled = e.target.checked; setHours(n); }} />
+                        <span className="hours-day">{DAYS[h.dayOfWeek]}</span>
+                      </label>
+                      <input type="time" value={h.startTime} disabled={!h.enabled}
+                        onChange={e => { const n = [...hours]; n[i].startTime = e.target.value; setHours(n); }} />
+                      <input type="time" value={h.endTime} disabled={!h.enabled}
+                        onChange={e => { const n = [...hours]; n[i].endTime = e.target.value; setHours(n); }} />
+                      <span></span>
+                    </div>
+                  ))}
+                  <button className="btn btn-sm" onClick={saveHours}>Save hours</button>
+                </div>
+
+                <div className="section-head"><div className="gold-bar"></div><h2>Mark a leave day</h2></div>
+                <div className="card">
+                  <div className="field"><label>Date</label>
+                    <input type="date" value={leaveDate} onChange={e => setLeaveDate(e.target.value)} /></div>
+                  <div className="field"><label>Reason (optional)</label>
+                    <input value={leaveReason} onChange={e => setLeaveReason(e.target.value)} placeholder="Conference, personal leave…" /></div>
+                  <button className="btn btn-sm btn-danger" onClick={markLeave}>Mark unavailable</button>
+                  <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 10 }}>
+                    Existing bookings that day will be cancelled automatically and patients notified by email.
+                  </p>
+                </div>
+              </React.Fragment>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- Shell ----------
+function App() {
+  const [session, setSession] = useState(() => {
+    const raw = localStorage.getItem("meridian_session");
+    return raw ? JSON.parse(raw) : null;
+  });
+  const [toast, setToast] = useState({ message: "", kind: "info" });
+
+  function showToast(message, kind = "info") { setToast({ message, kind }); }
+
+  function handleLogin(data) {
+    localStorage.setItem("meridian_session", JSON.stringify(data));
+    setSession(data);
+  }
+  function logout() {
+    localStorage.removeItem("meridian_session");
+    setSession(null);
+  }
+
+  if (!session) return (
+    <React.Fragment>
+      <AuthScreen onLogin={handleLogin} />
+      <Toast message={toast.message} kind={toast.kind} onDone={() => setToast({ message: "", kind: "info" })} />
+    </React.Fragment>
+  );
+
+  return (
+    <div>
+      <div className="topbar">
+        <div className="shell topbar-inner">
+          <div className="brand">
+            <div className="brand-mark">S</div>
+            <div>
+              <div className="brand-name">Swasth Clinic</div>
+              <div className="brand-sub">appointment workspace</div>
+            </div>
+          </div>
+          <div className="topbar-actions">
+            <span className="role-tag" style={{ background: ROLE_META[session.role].color }}>
+              <span className="role-dot"></span>{ROLE_META[session.role].label}
+            </span>
+            <span className="role-pill">{session.email}</span>
+            <button className="btn btn-sm btn-ghost" onClick={logout}>Sign out</button>
+          </div>
+        </div>
+      </div>
+
+      {session.role === "PATIENT" && <PatientPortal token={session.accessToken} showToast={showToast} />}
+      {session.role === "DOCTOR" && <DoctorPortal token={session.accessToken} showToast={showToast} />}
+      {session.role === "ADMIN" && <AdminPortal token={session.accessToken} showToast={showToast} />}
+
+      <Toast message={toast.message} kind={toast.kind} onDone={() => setToast({ message: "", kind: "info" })} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
